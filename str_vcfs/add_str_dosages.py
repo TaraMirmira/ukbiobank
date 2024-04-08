@@ -1,6 +1,7 @@
 import trtools.utils.tr_harmonizer as trh
 import numpy as np
 import sys
+import cyvcf2
 from cyvcf2 import VCF
 
 
@@ -17,7 +18,7 @@ vcf_reader.add_format_to_header({'ID': 'DS', 'Description': 'Dosage', 'Type': 'F
 vcf_reader.add_format_to_header({'ID': 'GT:DS', 'Description': 'Genotype:Dosage', 'Type': 'String', 'Number': '2'})
 
 
-vcf_writer = cyvcf2.Writer(outfile, invcf)
+vcf_writer = cyvcf2.Writer(outfile, vcf_reader)
 
 def get_gt(d):
     if d < 0.5:
@@ -25,7 +26,7 @@ def get_gt(d):
     else:
         return "0/1"
 
-v_get_gt = np.vectoriz(get_gt)
+v_get_gt = np.vectorize(get_gt)
 
 min_max_len = []
 
@@ -57,10 +58,14 @@ for trrecord in harmonizer:
 
     genotypes = v_get_gt(d_transf) 
 
-    trrecord.vcfrecord.FORMAT = "GT:DS"
+    #trrecord.vcfrecord.format = "GT:DS"
 
-    dosage_str = ":".join([f"{gt}:{ds:.2f}" for gt, ds in zip(genotypes, d_transf)])
-    trrecord.vcfrecord.genotypes = [dosage_str]
+    assert(genotypes.shape == d_transf.shape)
+
+    #gt[0] because gt is a 1-element array because genotypes shape is n_samples x 1
+    dosage_str = ",".join([f"{gt[0]}:{ds[0]:.2f}" for gt, ds in zip(genotypes, d_transf)])
+    print(dosage_str[:50])
+    trrecord.vcfrecord.genotypes = np.array(dosage_str.split(","))
 
     # Write variant to output VCF file
     vcf_writer.write_record(trrecord.vcfrecord)
@@ -71,3 +76,5 @@ for trrecord in harmonizer:
     #break
 
 np.savetxt(min_max_len_file, np.array(min_max_len))
+vcf_writer.close()
+vcf_reader.close()

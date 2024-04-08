@@ -6,6 +6,7 @@ from cyvcf2 import VCF
 
 infile = sys.argv[1]
 outfile = sys.argv[2]
+min_max_len_file = sys.argv[3]
 
 
 vcf_reader = VCF(infile)
@@ -25,6 +26,8 @@ def get_gt(d):
         return "0/1"
 
 v_get_gt = np.vectoriz(get_gt)
+
+min_max_len = []
 
 for trrecord in harmonizer:
     ap1 = trrecord.vcfrecord.format('AP1')
@@ -62,4 +65,9 @@ for trrecord in harmonizer:
     # Write variant to output VCF file
     vcf_writer.write_record(trrecord.vcfrecord)
 
+    str_id = trrecord.record_id
+    min_max_len.append([str_id, min_len, max_len])
+
     #break
+
+np.savetxt(min_max_len_file, np.array(min_max_len))

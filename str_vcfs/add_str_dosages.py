@@ -14,19 +14,11 @@ vcf_reader = VCF(infile)
 harmonizer = trh.TRRecordHarmonizer(vcf_reader)
 
 # Update FORMAT field to include GT:DS
-vcf_reader.add_format_to_header({'ID': 'DS', 'Description': 'Dosage', 'Type': 'Float', 'Number': '1'})
-vcf_reader.add_format_to_header({'ID': 'GT:DS', 'Description': 'Genotype:Dosage', 'Type': 'String', 'Number': '2'})
+#vcf_reader.add_format_to_header({'ID': 'DS', 'Description': 'Dosage', 'Type': 'Float', 'Number': '1'})
+#vcf_reader.add_format_to_header({'ID': 'GT:DS', 'Description': 'Genotype:Dosage', 'Type': 'String', 'Number': '2'})
 
 
 vcf_writer = cyvcf2.Writer(outfile, vcf_reader)
-
-def get_gt(d):
-    if d < 0.5:
-        return "0/0"
-    else:
-        return "0/1"
-
-v_get_gt = np.vectorize(get_gt)
 
 min_max_len = []
 
@@ -56,16 +48,14 @@ for trrecord in harmonizer:
     assert(np.all(d_transf<= 1) and np.all(d_transf >=0))
     print(d_transf.shape)
 
-    genotypes = v_get_gt(d_transf) 
+    #0, 0 False is 0/0. False because no phasing
+    genotypes = [[0,0,False] if d < 0.5 else [0,1,False] for d in d_transf]
 
-    #trrecord.vcfrecord.format = "GT:DS"
+    trrecord.vcfrecord.set_format('DS', d_transf)
+    trrecord.vcfrecord.genotypes = genotypes
 
-    assert(genotypes.shape == d_transf.shape)
-
-    #gt[0] because gt is a 1-element array because genotypes shape is n_samples x 1
-    dosage_str = ",".join([f"{gt[0]}:{ds[0]:.2f}" for gt, ds in zip(genotypes, d_transf)])
-    print(dosage_str[:50])
-    trrecord.vcfrecord.genotypes = np.array(dosage_str.split(","))
+    #as required by cyvcf2 https://brentp.github.io/cyvcf2/writing.html
+    trrecord.vcfrecord.genotypes = trrecord.vcfrecord.genotypes
 
     # Write variant to output VCF file
     vcf_writer.write_record(trrecord.vcfrecord)

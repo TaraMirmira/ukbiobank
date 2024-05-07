@@ -33,11 +33,11 @@ num_batches = math.ceil(variant_ct/batch_size)
 dosages = np.empty((batch_size, len(vcf_reader.samples)), dtype=np.float32)
 num_variants_processed_batch = 0
 num_variants_processed = 0
-for idx, trrecord in enumerate(harmonizer):
-#for record in vcf_reader:
-#    if record.INFO.get('PERIOD') is None:
-#        continue
-#    trrecord = trh.HarmonizeRecord(vcfrecord=record, vcftype=inferred_vcftype)
+#for idx, trrecord in enumerate(harmonizer):
+for record in vcf_reader:
+    if record.INFO.get('PERIOD') is None:
+        continue
+    trrecord = trh.HarmonizeRecord(vcfrecord=record, vcftype=inferred_vcftype)
 
     ap1 = trrecord.vcfrecord.format('AP1')
     ref1 = 1 - np.sum(ap1, axis=1)
@@ -86,6 +86,8 @@ for idx, trrecord in enumerate(harmonizer):
 
 
 np.savetxt(min_max_len_file, np.array(min_max_len, dtype=str), fmt='%s')
-assert(num_variants_processed == variant_ct)
+print("variant ct = ", variant_ct)
+print("num_variants processed = ", num_variants_processed)
 pgen_writer.close()
+assert(num_variants_processed == variant_ct)
 vcf_reader.close()

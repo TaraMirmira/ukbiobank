@@ -4,10 +4,11 @@ vcf=chr${chr}.vcf.gz
 
 #zcat $vcf | awk -F $'\t' -v 'OFS=\t' '!/^#/ {$4="A"; $5="T";} /;PERIOD=/ {print $1, $2, $3, $4, $5;}' > chr${chr}strs.pvar
 
-bcftools view -h $vcf > chr${chr}strs.pvar
+bcftools view -h $vcf | awk -F $'\t' -v OFS='\t' '/^#CHROM/ { print $1, $2, $3, $4, $5; } /^##/ { print; }' > chr${chr}strs.pvar 
 
 zcat $vcf | awk -F $'\t' -v OFS='\t' '!/^#/ && /;PERIOD=/ { $4="A"; $5="T"; print $1, $2, $3, $4, $5; }' >> chr${chr}strs.pvar
 
+exit 0
 
 variantct=$(grep -Ev '^#' chr${chr}strs.pvar | wc -l)
 

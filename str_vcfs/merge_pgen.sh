@@ -6,7 +6,8 @@ snps=${tomerge}/chr${chr}snps_sorted
 strs=${tomerge}/chr${chr}strs_sorted
 outpre=$merged/chr${chr}_snpstrs
 
-variantct_snps=$(wc -l < ${snps}.pvar)
+a=$(wc -l < ${snps}.pvar)
+variantct_snps=$((a - 1))
 variantct_strs=$(grep -Ev '^#' ${strs}.pvar | wc -l)
 #variantct=$((variantct_strs + variantct_sps - 1))
 
@@ -17,8 +18,10 @@ num_samples=$((a - 1))
 
 cp $snps.psam $outpre.psam
 
-cp $snps.pvar $outpre.pvar
-awk '!/^#/ { print >> "'"$outpre"'.pvar" }' "$strs.pvar"
+#cp $snps.pvar $outpre.pvar
+#awk '!/^#/ { print >> "'"$outpre"'.pvar" }' "$strs.pvar"
+awk '!/^##/' $strs.pvar > temp$chr.pvar
 
 
-python batch_merge_pgen.py $snps.pgen $strs.pgen $outpre.pgen $variantct_snps $variantct_strs $num_samples
+python batch_merge_pgen.py $snps.pgen $strs.pgen $snps.pvar temp$chr.pvar $variantct_snps $variantct_strs $outpre.pgen $outpre.pvar $num_samples
+rm temp$chr.pvar
